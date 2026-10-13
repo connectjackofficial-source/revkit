@@ -70,6 +70,7 @@ class PE:
     coff: CoffHeader
     optional: OptionalHeader
     sections: list = field(default_factory=list)
+    data: bytes = b""
 
 
 def parse(path: str) -> PE:
@@ -139,7 +140,7 @@ def from_bytes(data: bytes, path: str = "<bytes>") -> PE:
                                 characteristics=chars))
 
     return PE(path=path, dos=dos, coff=coff, optional=optional,
-              sections=sections)
+              sections=sections, data=data)
 
 
 def rva_to_offset(pe: PE, rva: int) -> int:
@@ -150,3 +151,57 @@ def rva_to_offset(pe: PE, rva: int) -> int:
         if start <= rva < end:
             return sec.pointer_to_raw_data + (rva - start)
     return rva
+
+
+def _cstr(data: bytes, off: int) -> str:
+    end = data.find(b"\x00", off)
+    if end == -1:
+        return ""
+    return data[off:end].decode("latin-1", "replace")
+
+
+def _data_directories_offset(pe: PE) -> int:
+    opt_off = pe.dos.e_lfanew + 24
+    return opt_off + (112 if pe.optional.is_pe32_plus else 96)
+
+
+def get_imports(pe: PE) -> list:
+    """Parse the import directory. Returns [{"dll": str, "functions": [..]}]."""
+    data = pe.data
+    dirs_off = _data_directories_offset(pe)
+    (rva, _size) = struct.unpack_from("<II", data, dirs_off + 8)  # index 1
+    if not rva:
+        return []
+    off = rva_to_offset(pe, rva)
+    out = []
+    i = 0
+    while True:
+        desc = data[off + i * 20: off + i * 20 + 20]
+        if len(desc) < 20 or all(b == 0 for b in desc):
+            break
+        (oft, _ts, _fc, name_rva, ft) = struct.unpack_from("<IIIII", desc, 0)
+        dll = _cstr(data, rva_to_offset(pe, name_rva))
+        funcs = _thunk_names(pe, data, oft or ft)
+        out.append({"dll": dll, "functions": funcs})
+        i += 1
+    return out
+
+
+def _thunk_names(pe: PE, data: bytes, thunk_rva: int) -> list:
+    names = []
+    if not thunk_rva:
+        return names
+    off = rva_to_offset(pe, thunk_rva)
+    stride = 8 if pe.optional.is_pe32_plus else 4
+    while True:
+        raw = data[off:off + stride]
+        if not raw or all(b == 0 for b in raw):
+            break
+        val = struct.unpack("<Q", raw)[0] if stride == 8 else struct.unpack("<I", raw)[0]
+        if val & (1 << (63 if stride == 8 else 31)):
+            names.append(f"ordinal_{val & 0xFFFF}")
+        else:
+            name_rva = rva_to_offset(pe, val & 0xFFFFFFFF)
+            names.append(_cstr(data, name_rva + 2) or f"rva_{val & 0xFFFFFFFF}")
+        off += stride
+    return names
