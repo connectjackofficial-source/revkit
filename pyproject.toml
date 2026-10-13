@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revkit"
+version = "0.1.0"
+description = "Zero-dependency reverse-engineering toolkit: PE headers, imports, exports, strings, entropy."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Jack" }]
+keywords = ["reverse-engineering", "pe", "malware-analysis", "binary", "forensics"]
+
+[project.scripts]
+revkit = "revkit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["revkit*"]
