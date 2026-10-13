@@ -54,6 +54,16 @@ class OptionalHeader:
 
 
 @dataclass
+class Section:
+    name: str
+    virtual_size: int
+    virtual_address: int
+    size_of_raw_data: int
+    pointer_to_raw_data: int
+    characteristics: int
+
+
+@dataclass
 class PE:
     path: str
     dos: DosHeader
@@ -114,4 +124,29 @@ def from_bytes(data: bytes, path: str = "<bytes>") -> PE:
         subsystem=subsystem,
         number_of_rva_and_sizes=nrv,
     )
-    return PE(path=path, dos=dos, coff=coff, optional=optional)
+
+    sections = []
+    sec_off = opt_off + coff.size_of_optional_header
+    for i in range(coff.number_of_sections):
+        raw = data[sec_off + i * 40: sec_off + i * 40 + 40]
+        name = raw[:8].rstrip(b"\x00").decode("latin-1")
+        (vsize, vaddr, rawsize, ptr, _, _) = struct.unpack_from("<IIIIII", raw, 8)
+        (chars,) = struct.unpack_from("<I", raw, 36)
+        sections.append(Section(name=name, virtual_size=vsize,
+                                virtual_address=vaddr,
+                                size_of_raw_data=rawsize,
+                                pointer_to_raw_data=ptr,
+                                characteristics=chars))
+
+    return PE(path=path, dos=dos, coff=coff, optional=optional,
+              sections=sections)
+
+
+def rva_to_offset(pe: PE, rva: int) -> int:
+    """Translate an RVA into a file offset via the section table."""
+    for sec in pe.sections:
+        start = sec.virtual_address
+        end = start + max(sec.virtual_size, sec.size_of_raw_data)
+        if start <= rva < end:
+            return sec.pointer_to_raw_data + (rva - start)
+    return rva
