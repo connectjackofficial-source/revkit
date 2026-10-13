@@ -205,3 +205,32 @@ def _thunk_names(pe: PE, data: bytes, thunk_rva: int) -> list:
             names.append(_cstr(data, name_rva + 2) or f"rva_{val & 0xFFFFFFFF}")
         off += stride
     return names
+
+
+def get_exports(pe: PE) -> dict:
+    """Parse the export directory (data directory index 0).
+
+    Returns {"dll": str, "base": int, "exports": [{"name", "ordinal", "rva"}]}.
+    """
+    data = pe.data
+    dirs_off = _data_directories_offset(pe)
+    (rva, _size) = struct.unpack_from("<II", data, dirs_off)
+    if not rva:
+        return {"dll": "", "base": 0, "exports": []}
+    off = rva_to_offset(pe, rva)
+    (_c, _ts, _maj, _min, name_rva, base, nfuncs, nnames,
+     funcs_rva, names_rva, ords_rva) = struct.unpack_from(
+        "<IIHHIIIIIII", data, off)
+    dll = _cstr(data, rva_to_offset(pe, name_rva))
+    out = []
+    if nnames and funcs_rva:
+        funcs_off = rva_to_offset(pe, funcs_rva)
+        names_off = rva_to_offset(pe, names_rva)
+        ords_off = rva_to_offset(pe, ords_rva)
+        for i in range(nnames):
+            (n_rva,) = struct.unpack_from("<I", data, names_off + i * 4)
+            name = _cstr(data, rva_to_offset(pe, n_rva))
+            (ord_idx,) = struct.unpack_from("<H", data, ords_off + i * 2)
+            (f_rva,) = struct.unpack_from("<I", data, funcs_off + ord_idx * 4)
+            out.append({"name": name, "ordinal": base + ord_idx, "rva": f_rva})
+    return {"dll": dll, "base": base, "exports": out}
