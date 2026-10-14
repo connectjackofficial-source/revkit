@@ -10,6 +10,7 @@ from .elf import NotELF, parse as parse_elf
 from .entropy import packer_score, section_entropies
 from .overlay import overlay_info
 from .pe import NotPE, get_exports, get_imports, parse
+from .resources import get_resources
 from .strings import extract_strings
 
 
@@ -37,6 +38,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="detect data appended past the last section")
     ap.add_argument("--segments", action="store_true",
                     help="list ELF program header segments")
+    ap.add_argument("--resources", action="store_true",
+                    help="list embedded PE resource types")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON")
     return ap
@@ -72,7 +75,8 @@ def main(argv=None) -> int:
         return 1
 
     mode = (args.imports or args.exports or args.sections
-            or args.strings or args.entropy or args.overlay)
+            or args.strings or args.entropy or args.overlay
+            or args.resources)
     if args.json:
         _emit_json(args, pe, data)
     elif mode:
@@ -128,6 +132,10 @@ def _emit_human(args, pe, data):
         print(f"overlay: {'present' if info['present'] else 'clean'} "
               f"offset=0x{info['offset']:x} size={info['size']} "
               f"entropy_hint={info['entropy_hint']}")
+    if args.resources:
+        for r in get_resources(pe):
+            print(f"  resource {r['type']:<12} id={r['type_id']:<4} "
+                  f"entries={r['entries']}")
 
 
 def _emit_json(args, pe, data):
@@ -151,6 +159,8 @@ def _emit_json(args, pe, data):
         out["packer"] = packer_score(pe)
     if args.overlay:
         out["overlay"] = overlay_info(pe)
+    if args.resources:
+        out["resources"] = get_resources(pe)
     print(json.dumps(out, indent=2, ensure_ascii=False))
 
 
