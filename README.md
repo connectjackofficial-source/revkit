@@ -40,6 +40,12 @@ feared — every module is a few hundred lines of plain `struct.unpack`.
   (`strings(1)` style, both byte alignments).
 - **Entropy** — Shannon entropy per section plus a heuristic packer score
   (UPX sections, high-entropy blobs, tiny `.text`).
+- **Overlay detection** — flags data appended past the last section, the
+  classic dropper / second-stage-payload signal, with an entropy hint.
+- **ELF segments** — ELF32/ELF64 headers plus the program header table
+  (`PT_LOAD`, `PT_INTERP`, …) for quick Linux-binary triage.
+- **Resources** — enumerates embedded PE resource types (VERSION, MANIFEST,
+  RCDATA, …) to see what a binary claims to be at a glance.
 
 ## Install
 
@@ -61,6 +67,9 @@ revkit sample.bin --imports
 revkit sample.bin --exports
 revkit sample.bin --strings --min-len 8 --utf16
 revkit sample.bin --entropy
+revkit sample.bin --overlay
+revkit sample.bin --resources
+revkit sample.elf --segments
 
 # machine-readable
 revkit sample.bin --json --imports --sections
@@ -85,6 +94,9 @@ revkit/
 │   ├── detect.py   binary format detection (PE/ELF/Mach-O)
 │   ├── strings.py  ASCII / UTF-16 printable string extraction
 │   ├── entropy.py  Shannon entropy + packer heuristics
+│   ├── overlay.py  appended-data (overlay) detection
+│   ├── elf.py      ELF header + program header segments
+│   ├── resources.py  PE resource directory enumeration
 │   └── cli.py      command-line interface
 └── tests/          script-style tests, no pytest required
 ```
@@ -101,6 +113,9 @@ python -u tests\test_strings.py
 python -u tests\test_detect.py
 python -u tests\test_entropy.py
 python -u tests\test_cli.py
+python -u tests\test_overlay.py
+python -u tests\test_elf.py
+python -u tests\test_resources.py
 ```
 
 Tests run against real system binaries (`kernel32.dll`, `notepad.exe`) plus

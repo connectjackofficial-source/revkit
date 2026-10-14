@@ -2,6 +2,19 @@
 
 All notable changes to revkit are tracked here.
 
+## [0.2.0] - 2026-10-14
+
+### Added
+
+- `overlay_info()` — detect data appended past the last section (a classic
+  dropper/injector signal), with a coarse entropy hint
+- ELF support: `revkit.elf.parse()` reads the ELF header and program header
+  table; `--segments` prints PT_* segments
+- `get_resources()` — enumerate embedded PE resource types (VERSION,
+  MANIFEST, RCDATA, …); `--resources` prints them
+- CLI: `--overlay`, `--segments`, `--resources` flags; JSON output includes
+  the new sections
+
 ## [0.1.0] - 2026-10-13
 
 Initial release.
