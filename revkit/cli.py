@@ -6,6 +6,7 @@ import json
 import sys
 
 from .detect import detect_type
+from .elf import NotELF, parse as parse_elf
 from .entropy import packer_score, section_entropies
 from .overlay import overlay_info
 from .pe import NotPE, get_exports, get_imports, parse
@@ -34,6 +35,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="per-section entropy and packer heuristics")
     ap.add_argument("--overlay", action="store_true",
                     help="detect data appended past the last section")
+    ap.add_argument("--segments", action="store_true",
+                    help="list ELF program header segments")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON")
     return ap
@@ -48,6 +51,17 @@ def main(argv=None) -> int:
         # still run generic tools (strings/entropy) on non-PE files
         data = open(args.file, "rb").read()
         info = detect_type(data)
+        if args.segments and info["format"] == "elf":
+            try:
+                elf = parse_elf(data)
+            except NotELF:
+                pass
+            else:
+                for seg in elf.segments:
+                    print(f"  {seg['type']:<14} off=0x{seg['offset']:x} "
+                          f"vaddr=0x{seg['vaddr']:x} "
+                          f"filesz={seg['filesz']} memsz={seg['memsz']}")
+                return 0
         if args.json:
             print(json.dumps({"error": str(exc),
                               "detected": info}, indent=2))
