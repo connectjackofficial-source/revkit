@@ -7,6 +7,7 @@ import sys
 
 from .detect import detect_type
 from .entropy import packer_score, section_entropies
+from .overlay import overlay_info
 from .pe import NotPE, get_exports, get_imports, parse
 from .strings import extract_strings
 
@@ -31,6 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="include UTF-16LE strings")
     ap.add_argument("--entropy", action="store_true",
                     help="per-section entropy and packer heuristics")
+    ap.add_argument("--overlay", action="store_true",
+                    help="detect data appended past the last section")
     ap.add_argument("--json", action="store_true",
                     help="emit machine-readable JSON")
     return ap
@@ -55,7 +58,7 @@ def main(argv=None) -> int:
         return 1
 
     mode = (args.imports or args.exports or args.sections
-            or args.strings or args.entropy)
+            or args.strings or args.entropy or args.overlay)
     if args.json:
         _emit_json(args, pe, data)
     elif mode:
@@ -106,6 +109,11 @@ def _emit_human(args, pe, data):
         for s in info["sections"]:
             print(f"  {s['name']:<10} size={s['size']:>8} "
                   f"entropy={s['entropy']:.3f}")
+    if args.overlay:
+        info = overlay_info(pe)
+        print(f"overlay: {'present' if info['present'] else 'clean'} "
+              f"offset=0x{info['offset']:x} size={info['size']} "
+              f"entropy_hint={info['entropy_hint']}")
 
 
 def _emit_json(args, pe, data):
@@ -127,6 +135,8 @@ def _emit_json(args, pe, data):
                                          mode=mode)
     if args.entropy:
         out["packer"] = packer_score(pe)
+    if args.overlay:
+        out["overlay"] = overlay_info(pe)
     print(json.dumps(out, indent=2, ensure_ascii=False))
 
 
