@@ -10,9 +10,13 @@ from .entropy import shannon_entropy, packer_score, section_entropies
 from .overlay import overlay_info
 from .elf import ELF, parse as parse_elf
 from .resources import get_resources
+from .fuzzyhash import fuzzy_hash, fuzzy_compare
+from .bytes import byte_distribution
+from .rich import rich_header
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = ["PE", "parse", "from_bytes", "get_imports", "get_exports",
            "detect_type", "extract_strings", "shannon_entropy",
            "packer_score", "section_entropies", "overlay_info",
-           "ELF", "parse_elf", "get_resources"]
+           "ELF", "parse_elf", "get_resources", "fuzzy_hash",
+           "fuzzy_compare", "byte_distribution", "rich_header"]

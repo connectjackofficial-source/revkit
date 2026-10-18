@@ -2,6 +2,17 @@
 
 All notable changes to revkit are tracked here.
 
+## [0.3.0] - 2026-10-18
+
+### Added
+
+- `fuzzy_hash()` / `fuzzy_compare()` — ssdeep-style context-triggered
+  piecewise hashing for malware/firmware similarity triage
+- `byte_distribution()` — byte histogram plus a pseudo-randomness score
+  to flag encrypted or compressed payloads
+- `rich_header()` — decodes the XOR-obfuscated VS linker Rich header
+  (compiler fingerprinting)
+
 ## [0.2.0] - 2026-10-14
 
 ### Added
