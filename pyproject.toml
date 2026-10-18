@@ -1,10 +1,10 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "revkit"
-version = "0.1.0"
+version = "0.3.0"
 description = "Zero-dependency reverse-engineering toolkit: PE headers, imports, exports, strings, entropy."
 readme = "README.md"
 requires-python = ">=3.9"
