@@ -13,10 +13,12 @@ from .resources import get_resources
 from .fuzzyhash import fuzzy_hash, fuzzy_compare
 from .bytes import byte_distribution
 from .rich import rich_header
+from .xor import xor_brute, xor_brute_strings
 
 __version__ = "0.3.0"
 __all__ = ["PE", "parse", "from_bytes", "get_imports", "get_exports",
            "detect_type", "extract_strings", "shannon_entropy",
            "packer_score", "section_entropies", "overlay_info",
            "ELF", "parse_elf", "get_resources", "fuzzy_hash",
-           "fuzzy_compare", "byte_distribution", "rich_header"]
+           "fuzzy_compare", "byte_distribution", "rich_header",
+           "xor_brute", "xor_brute_strings"]
